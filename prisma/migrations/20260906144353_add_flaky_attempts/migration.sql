@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "TestCase" ADD COLUMN     "attempts" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "flaky" BOOLEAN NOT NULL DEFAULT false;

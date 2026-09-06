@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+dashboard/node_modules/
+
+# Production builds
+dist/
+.next/
+dashboard/.next/
+dashboard/out/
+
+# Environment variables & secrets
+.env
+.env*.local
+dashboard/.env
+dashboard/.env*.local
+
+# Test outputs & screenshots
+screenshots/
+*.log
+
+# Source maps & cache
+*.js.map
+*.tsbuildinfo
+.turbo/

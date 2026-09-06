@@ -1,0 +1,42 @@
+{
+  "name": "qatool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/cli/index.js",
+  "type": "module",
+  "bin": {
+    "qatool": "dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli/index.ts",
+    "test": "tsx src/cli/index.ts run --suite=./tests",
+    "test:parallel": "tsx src/cli/index.ts run --suite=./tests --parallel=3 --retries=2",
+    "dashboard": "npm --prefix dashboard run dev",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/chrome-remote-interface": "^0.34.0",
+    "@types/node": "^26.4.1",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "chrome-remote-interface": "^0.34.0",
+    "dotenv": "^17.4.2",
+    "pg": "^8.23.0",
+    "prisma": "^7.10.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "prisma@7.10.0": true,
+    "@prisma/engines@7.10.0": true
+  }
+}

@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model TestRun {
+  id         String     @id @default(uuid())
+  createdAt  DateTime   @default(now())
+  suiteDir   String
+  durationMs Int
+  total      Int
+  passed     Int
+  failed     Int
+  cases      TestCase[]
+}
+
+model TestCase {
+  id         String      @id @default(uuid())
+  runId      String
+  run        TestRun     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  externalId String      // the id field from the test definition file
+  name       String
+  type       String      // "api" | "ui"
+  tags       String[]
+  status     String      // "pass" | "fail"
+  flaky      Boolean     @default(false)
+  attempts   Int         @default(1)
+  durationMs Int
+  steps      TestStep[]
+}
+
+model TestStep {
+  id         String            @id @default(uuid())
+  caseId     String
+  case       TestCase          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  externalId String            // the step id from the test definition file
+  name       String
+  status     String            // "pass" | "fail"
+  durationMs Int
+  error      String?
+  assertions AssertionResult[]
+}
+
+model AssertionResult {
+  id         String   @id @default(uuid())
+  stepId     String
+  step       TestStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  externalId String   // the assertion id from the test definition file
+  type       String
+  expected   String?  // JSON-serialised
+  actual     String   // JSON-serialised
+  pass       Boolean
+  message    String
+}
