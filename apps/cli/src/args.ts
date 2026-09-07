@@ -1,5 +1,6 @@
 export interface ParsedArgs {
   command: string;
+  subcommand?: string;
   suite?: string;
   tags: string[];
   help: boolean;
@@ -10,11 +11,17 @@ export interface ParsedArgs {
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   count: number;
   concurrency: number;
+  // Test data generation args (Phase 4.5)
+  format: "json" | "csv" | "table";
+  fields?: string;
+  // GitHub integration args (Phase 4.6)
+  githubSync: boolean;
 }
 
 export function parseArgs(argv: string[]): ParsedArgs {
   const result: ParsedArgs = {
     command: "",
+    subcommand: undefined,
     suite: undefined,
     tags: [],
     help: false,
@@ -24,13 +31,23 @@ export function parseArgs(argv: string[]): ParsedArgs {
     method: "GET",
     count: 20,
     concurrency: 5,
+    format: "json",
+    fields: undefined,
+    githubSync: false,
   };
 
   let i = 0;
 
+  // First positional is the primary command (e.g. "run", "load", "gen")
   if (argv.length > 0 && !argv[0].startsWith("--")) {
     result.command = argv[0];
     i = 1;
+
+    // Second positional for subcommands (e.g. "gen users", "gen products")
+    if (argv.length > 1 && !argv[1].startsWith("--")) {
+      result.subcommand = argv[1];
+      i = 2;
+    }
   }
 
   while (i < argv.length) {
@@ -97,6 +114,16 @@ function applyFlag(args: ParsedArgs, key: string, value: string): void {
       break;
     case "concurrency":
       args.concurrency = Math.max(1, parseInt(value, 10) || 5);
+      break;
+    case "format":
+      args.format = (value.toLowerCase() as any) || "json";
+      break;
+    case "fields":
+      args.fields = value;
+      break;
+    case "github-sync":
+    case "auto-issue":
+      args.githubSync = value !== "false";
       break;
     case "help":
       args.help = value !== "false";

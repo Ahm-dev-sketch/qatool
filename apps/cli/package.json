@@ -10,6 +10,8 @@
     "@qatool/core": "*",
     "@qatool/api-engine": "*",
     "@qatool/ui-engine": "*",
+    "@qatool/data-gen": "*",
+    "@qatool/integrations": "*",
     "dotenv": "^16.4.7"
   }
 }
