@@ -6,6 +6,6 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@qatool/core": "*",
-    "chrome-remote-interface": "^0.34.0"
+    "playwright-core": "^1.63.0"
   }
 }
