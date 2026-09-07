@@ -1,4 +1,4 @@
-import { defineTest } from "../src/core/define.js";
+import { defineTest } from "@qatool/core";
 
 export default defineTest({
   id: "tc-api-001",

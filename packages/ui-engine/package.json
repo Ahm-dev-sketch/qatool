@@ -1,0 +1,11 @@
+{
+  "name": "@qatool/ui-engine",
+  "version": "2.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@qatool/core": "*",
+    "chrome-remote-interface": "^0.34.0"
+  }
+}

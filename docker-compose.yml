@@ -16,7 +16,7 @@ services:
 
   dashboard:
     build:
-      context: ./dashboard
+      context: ./apps/dashboard
       dockerfile: Dockerfile
     container_name: qatool-dashboard
     restart: unless-stopped

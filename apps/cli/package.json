@@ -1,0 +1,15 @@
+{
+  "name": "@qatool/cli",
+  "version": "2.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "bin": {
+    "qatool": "./bin/qatool.js"
+  },
+  "dependencies": {
+    "@qatool/core": "*",
+    "@qatool/api-engine": "*",
+    "@qatool/ui-engine": "*",
+    "dotenv": "^16.4.7"
+  }
+}

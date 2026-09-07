@@ -1,4 +1,4 @@
-import { defineTest } from "../src/core/define.js";
+import { defineTest } from "@qatool/core";
 
 // Stateful counter to simulate flaky network or transient failure
 let callCount = 0;

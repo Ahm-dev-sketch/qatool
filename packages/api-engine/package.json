@@ -1,0 +1,11 @@
+{
+  "name": "@qatool/api-engine",
+  "version": "2.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@qatool/core": "*",
+    "dotenv": "^16.4.7"
+  }
+}
