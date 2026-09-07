@@ -1,138 +1,128 @@
-# 📘 Engineering Case Study: Why I Built a QA Automation Engine from Scratch
+# 📘 Case Study: Building a Unified QA Automation Platform from Scratch
 
 **Author**: Senior QA & Test Automation Engineer  
-**Project**: QATOOL (Custom API & CDP Browser Automation Platform)  
-**Stack**: TypeScript, Node.js, Chrome DevTools Protocol (CDP), Prisma 7, PostgreSQL, Next.js 15, Tailwind CSS
+**Project**: QATOOL (Consolidated QA Automation Monorepo)  
+**Architecture**: Monorepo Workspaces (`@qatool/core`, `@qatool/api-engine`, `@qatool/ui-engine`, `@qatool/data-gen`, `@qatool/integrations`, `apps/cli`, `apps/dashboard`)  
+**Stack**: TypeScript, Node.js 20+, Playwright-Core, Prisma 7, PostgreSQL 17, Next.js 15, Tailwind CSS, Recharts, Faker.js, Octokit
 
 ---
 
-## 1. Executive Summary
+## 1. Executive Summary & Problem Statement
 
-Modern test automation often revolves around using high-level frameworks like Playwright, Cypress, or Selenium. While these tools are powerful, they abstract away the underlying mechanics of how browsers and HTTP runtimes actually operate.
+In enterprise software engineering, test automation teams frequently stitch together a fragmented constellation of standalone tools:
+- **Postman / k6** for API verification and quick load tests.
+- **Playwright / Cypress** for browser UI tests.
+- **TestRail / Xray** for organizing test cases and tracking coverage.
+- **Allure / ExtentReports** for generating HTML report artifacts.
+- **Faker.js scripts** for seeding test databases.
+- **Jira / GitHub** for filing manual bug reports when automated tests fail.
 
-To develop deep domain expertise in browser protocols, network execution, and test orchestration, I engineered **QATOOL** from the ground up:
-1. **Zero High-Level Test Framework Dependencies**: No Jest, Mocha, Chai, Playwright, or Cypress libraries.
-2. **Raw Chrome DevTools Protocol (CDP) Control**: Controlling Chrome via WebSockets directly using native protocol domains (`Page`, `DOM`, `Runtime`, `Input`, `Network`).
-3. **Dynamic Variable Chaining**: Chaining API tokens across multiple requests via custom memory stores and recursive string interpolation (`{{token}}`).
-4. **Flaky Test Heuristics & Parallel Orchestration**: Multi-attempt retry loops that distinguish true failures from transient flakiness.
-5. **Unified Reporting Dashboard**: A full-stack Next.js dashboard backed by PostgreSQL to monitor test health, trends, and failure screenshots.
+### The Problem: Tool Fragmentation & High Overhead
+1. **Data Silos**: Test results live in ephemeral HTML files or separate SaaS dashboards.
+2. **Context Switching**: QA engineers maintain disparate configs, assertion syntaxes, and credential stores.
+3. **Flaky Test Blindness**: Standard CI runners mark retried tests as "passed", hiding flakiness until production issues occur.
+4. **Maintenance Burden**: High cost of integrating disparate vendor APIs and managing multiple licensing tiers.
 
 ---
 
-## 2. Technical Deep-Dive: Under the Hood of Browser Automation
+## 2. The Solution: QATOOL Consolidated Architecture
 
-### 2.1 The CDP Architecture
-High-level tools like Playwright and Puppeteer operate by communicating with Chromium over the Chrome DevTools Protocol. Instead of relying on their pre-packaged APIs, QATOOL connects directly to the Chrome debugging port:
+To demonstrate that modern test automation can be streamlined into a cohesive, high-performance platform, I engineered **QATOOL** as a TypeScript monorepo that consolidates these 5 critical categories:
 
 ```
-[QATOOL Engine]
-       │  (WebSocket ws://localhost:9222/devtools/page/...)
-       ▼
-[Chrome DevTools Protocol Daemon]
-   ├── Page Domain      ➔ Page.navigate, Page.loadEventFired, Page.captureScreenshot
-   ├── DOM Domain       ➔ DOM.getDocument, DOM.querySelector, DOM.getBoxModel
-   ├── Runtime Domain   ➔ Runtime.evaluate (Execute JavaScript in V8 context)
-   └── Input Domain     ➔ Input.dispatchMouseEvent, Input.dispatchKeyEvent
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                               QATOOL UNIFIED PLATFORM                                   │
+├───────────────────┬───────────────────┬───────────────────┬─────────────────────────────┤
+│ 1. API & LOAD     │ 2. BROWSER UI     │ 3. TEST MANAGEMENT│ 4. REPORTING & TRENDS       │
+│ • Custom fetch    │ • Playwright-Core │ • Tag Catalog     │ • Next.js 15 App Router     │
+│ • {{token}} chain │ • Opinionated DSL │ • Stability Index │ • Recharts Pass-Rate Timeline│
+│ • p50/p95 Load Run│ • Auto-Screenshot │ • History Dots    │ • Flaky Test Leaderboard    │
+├───────────────────┴───────────────────┴───────────────────┴─────────────────────────────┤
+│ 5. AUXILIARY TOOLING: Data Generator (@faker-js) + GitHub Bug Deduplicator (@octokit)   │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Re-implementing `click()` without High-Level Abstractions
-In Playwright, `await page.click('button')` is a single line. Under the hood, the browser must find the element, calculate its physical viewport coordinates, and dispatch hardware-level mouse events.
+---
 
-In QATOOL, I implemented this sequence explicitly in `src/browser/elements.ts`:
-1. **DOM Resolution**: Query the root DOM node ID via `DOM.getDocument({ depth: 0 })`.
-2. **Selector Querying**: Locate the element's node ID using `DOM.querySelector({ nodeId, selector })`.
-3. **Bounding Quad Calculation**: Retrieve the element's bounding geometry using `DOM.getBoxModel({ nodeId })`. The protocol returns an 8-point polygon quad `[x1, y1, x2, y1, x2, y2, x1, y2]`.
-4. **Center Point Calculation**: Calculate the center $(X, Y)$ coordinate:
-   $$\text{center}_X = \frac{x_1 + x_2}{2}, \quad \text{center}_Y = \frac{y_1 + y_2}{2}$$
-5. **Event Dispatching**: Dispatch `mousePressed` and `mouseReleased` events through `Input.dispatchMouseEvent`.
+## 3. Deep-Dive: Core Technical Implementations
+
+### 3.1 Custom Step Executor Architecture (`@qatool/core`)
+Instead of hardcoding what a test can execute, `@qatool/core` defines a clean `StepExecutor` interface:
 
 ```typescript
-// Excerpt from QATOOL's element click engine:
-const { model } = await DOM.getBoxModel({ nodeId });
-const [x1, y1, x2, , , y2] = model.content;
-const x = Math.round((x1 + x2) / 2);
-const y = Math.round((y1 + y2) / 2);
-
-await Input.dispatchMouseEvent({ type: "mousePressed", x, y, button: "left", clickCount: 1 });
-await Input.dispatchMouseEvent({ type: "mouseReleased", x, y, button: "left", clickCount: 1 });
-```
-
-### 2.3 Waiting Strategies & Flakiness Prevention
-In raw CDP, there is no automatic `waitForSelector`. If a script queries the DOM before an element has rendered, the call fails immediately.
-
-To solve this, QATOOL implements an asynchronous polling loop evaluated in the page's V8 context:
-```typescript
-export async function waitForSelector(client: CDP.Client, selector: string, timeoutMs = 10000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const res = await client.Runtime.evaluate({
-      expression: `!!document.querySelector(${JSON.stringify(selector)})`,
-      returnByValue: true,
-    });
-    if (res.result.value === true) return;
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  throw new Error(`waitForSelector("${selector}") timed out after ${timeoutMs}ms`);
+export interface StepExecutor {
+  canHandle(action: string): boolean;
+  execute(stepId: string, stepName: string, action: string, payload: unknown, context: { runId: string }): Promise<StepResult>;
+  teardownCase?(context: { runId: string }): Promise<void>;
 }
 ```
 
----
-
-## 3. API Engine: Dynamic Chaining & Variable Store
-
-In real-world end-to-end tests, API requests rarely happen in isolation. A standard flow requires logging in, extracting a bearer token from the JSON response body, and injecting it into subsequent headers.
-
-### 3.1 The Variable Store & Resolver
-QATOOL implements an isolated in-memory `VariableStore` per test case:
-- **Path Extraction**: Uses dot-notation string parsing (`extractPath(res.body, "data.user.token")`) to safely traverse deep JSON payloads.
-- **Deep Interpolation**: Uses recursive pattern replacement (`/\{\{(\w+)\}\}/g`) across request URLs, headers, bodies, and query parameters before dispatching requests.
+This decoupled architecture allows the runner to dispatch `http.request`, `http.concurrent`, or `browser.step` dynamically to their respective package engines while keeping the `RunReport` and PostgreSQL schema completely unified.
 
 ---
 
-## 4. Test Orchestration & Flaky Detection
+### 3.2 Dynamic Variable Chaining in API Testing (`@qatool/api-engine`)
+In multi-step API flows (e.g., Auth Login $\rightarrow$ User Creation $\rightarrow$ Resource Access), state must flow seamlessly.
 
-A critical problem in modern CI/CD pipelines is test flakiness (tests that fail intermittently due to network jitter, CPU spikes, or asynchronous race conditions).
+QATOOL implements an isolated in-memory `VariableStore` per test case with recursive string interpolation:
+- **Dot-Notation Path Extractor**: `extractPath(res.body, "data.tokens[0].accessToken")` safely navigates nested objects and arrays.
+- **Deep Interpolator**: Automatically replaces `{{token}}` within URLs, request headers, JSON bodies, and query parameters before execution.
 
-### 4.1 Flaky Classification Algorithm
-QATOOL implements an explicit multi-attempt retry wrapper (`src/core/retry.ts`):
+---
 
-```
-                       ┌──────────────────────┐
-                       │  Execute Test Run    │
-                       └──────────┬───────────┘
-                                  │
-                       ┌──────────▼───────────┐
-                       │   Did test pass?     │
-                       └────┬────────────┬────┘
-                        YES │            │ NO
-                            │            │
-            ┌───────────────▼┐          ┌▼──────────────────────┐
-            │ Was attempt > 1?│          │ Are retries remaining?│
-            └────┬───────┬───┘          └────┬──────────────┬───┘
-             YES │       │ NO            YES │              │ NO
-                 │       │                   │              │
-      ┌──────────▼───┐  ┌▼────────────┐ ┌────▼────────┐  ┌──▼───────────┐
-      │ Flag: FLAKY  │  │ Flag: PASS  │ │ Re-execute  │  │ Flag: FAILED │
-      │ (Unstable)   │  │ (Clean)     │ │ (Attempt N) │  │ (Hard Fail)  │
-      └──────────────┘  └─────────────┘ └─────────────┘  └──────────────┘
+### 3.3 Stand-in Concurrent Load Runner (p50 / p90 / p95 / p99)
+Rather than launching heavy external load generators like JMeter for baseline performance checks, `@qatool/api-engine` provides a built-in concurrent load runner:
+
+```typescript
+// Algorithm: Semaphore-bounded concurrent firing with percentile calculations
+const sorted = [...latencies].sort((a, b) => a - b);
+const p50 = sorted[Math.floor(0.50 * sorted.length)];
+const p95 = sorted[Math.floor(0.95 * sorted.length)];
+const p99 = sorted[Math.floor(0.99 * sorted.length)];
 ```
 
-This prevents flaky tests from polluting pass rates or getting masked as clean passes. The dashboard exposes a **Flaky Test Leaderboard** that highlights tests with high variance.
+This can be triggered via CLI (`qatool load --url=... --count=50 --concurrency=10`) or embedded directly as an assertion step (`maxP95Ms: 500`) in regular test suites.
 
 ---
 
-## 5. Key Takeaways & Engineering Value
-
-Building this toolkit established several foundational engineering insights:
-1. **CDP Domain Separation**: Clear boundaries between execution (`Runtime`), presentation (`DOM`), interaction (`Input`), and lifecycle (`Page`).
-2. **Decoupled Architecture**: Separating the test runner from the execution modules allows new testing drivers (e.g. gRPC, WebSocket tests, Mobile CDP) to be plugged in effortlessly.
-3. **Production Readiness**: Persisting structured telemetry directly to PostgreSQL unlocks rich reporting capabilities that file-based JUnit XML cannot match.
+### 3.4 Playwright-Core Driver with Opinionated DSL (`@qatool/ui-engine`)
+Instead of wrapping heavy high-level test runners, `@qatool/ui-engine` drives Chromium using `playwright-core` with an opinionated, lightweight DSL:
+- Auto-waits on element visibility before clicking or typing.
+- Captures failure screenshots automatically upon assertion error.
+- Enforces fresh browser context isolation per test case to avoid state leakage.
 
 ---
 
-## 6. How to Reference in Technical Interviews
+### 3.5 Flaky Test Heuristics & Leaderboard
+Standard test frameworks mask flakiness by reporting a test as "Passed" if retry attempt 2 succeeds.
 
-- **Topic**: *"How do browser automation frameworks work under the hood?"*  
-  **Narrative**: Explain the CDP WebSocket connection, domain enabling (`DOM`, `Runtime`, `Page`, `Input`), bounding box calculation, and event loop synchronization.
-- **Topic**: *"How do you handle flaky tests in large suites?"*  
-  **Narrative**: Discuss the distinction between blind retries and retry classification with flaky heuristics and leaderboard tracking.
+QATOOL categorizes execution outcomes into a 3-tier classification:
+1. **CLEAN PASS**: Passed on attempt 1.
+2. **FLAKY**: Failed on attempt 1, but succeeded on retry attempt $\ge 2$. Logged with `flaky: true` and `attempts: N`.
+3. **HARD FAILURE**: Failed on all $N$ allowed retry attempts.
+
+These metrics feed into the **Flaky Test Leaderboard** on the dashboard, giving QA and engineering teams actionable insights into unstable endpoints or race conditions.
+
+---
+
+### 3.6 Automated GitHub Bug Filing with Deduplication (`@qatool/integrations`)
+When tests fail in CI/CD, creating duplicate bug tickets creates noise. 
+
+`@qatool/integrations` uses `@octokit/rest` with intelligent deduplication:
+1. Queries the target GitHub repository for open issues labeled `automated-test-failure`.
+2. Matches on test case name or ID.
+3. **If an issue is already open**: Appends a run failure comment with the latest run ID and error message.
+4. **If no open issue exists**: Creates a new GitHub issue with full markdown tables, failed step stack traces, and assertion diffs.
+
+---
+
+## 4. Engineering Impact & Portfolio Value
+
+| Challenge | Traditional Approach | QATOOL Solution |
+|---|---|---|
+| **Test Setup & Execution** | Separate Postman CLI, Playwright runner, k6 script | Single `qatool run` or `qatool load` CLI command |
+| **Test Data Creation** | Manual CSV editing or standalone script | Built-in `qatool gen` command (JSON, CSV, Table) |
+| **Bug Tracking** | Manual Jira copy-paste of stack traces | Auto GitHub Issue sync with deduplication |
+| **Telemetry & Reporting** | Ephemeral HTML files / JUnit XML | Relational PostgreSQL database + Next.js 15 Web Dashboard |
+
+Building QATOOL demonstrates full-stack proficiency in **TypeScript architecture, systems design, concurrency control, browser drivers, relational data modeling, and modern UI engineering**.
