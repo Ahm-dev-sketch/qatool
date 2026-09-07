@@ -11,6 +11,13 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface TrendDataPoint {
   date: string;
@@ -26,82 +33,135 @@ interface TrendDataPoint {
 export function TrendCharts({ data }: { data: TrendDataPoint[] }) {
   if (data.length === 0) {
     return (
-      <div className="p-12 text-center text-slate-500 text-xs">
-        No execution trends recorded yet.
-      </div>
+      <Card className="shadow-xs">
+        <CardContent className="p-12 text-center text-xs text-muted-foreground">
+          No execution trends recorded yet. Run tests to populate charts.
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Pass Rate Trend */}
-      <div className="bg-[#111827] border border-[#1e293b] rounded-xl p-6 shadow-sm">
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-slate-200">Pass Rate Over Time (%)</h3>
-          <p className="text-xs text-slate-400">Historical success percentage per test suite run</p>
-        </div>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="passRateGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="date" stroke="#64748b" fontSize={11} tickLine={false} />
-              <YAxis stroke="#64748b" fontSize={11} tickLine={false} domain={[0, 100]} unit="%" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#0d1322",
-                  borderColor: "#1e293b",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  color: "#f8fafc",
-                }}
-                formatter={(value: any) => [`${value}%`, "Pass Rate"]}
-              />
-              <Area
-                type="monotone"
-                dataKey="passRate"
-                stroke="#10b981"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#passRateGrad)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      <Card className="shadow-xs">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold">
+            Pass Rate Trend (%)
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Historical suite success percentage across runs
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={data}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="passRateGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={11}
+                  tickLine={false}
+                />
+                <YAxis
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={11}
+                  tickLine={false}
+                  domain={[0, 100]}
+                  unit="%"
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    borderColor: "hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    color: "hsl(var(--popover-foreground))",
+                  }}
+                  formatter={(value: any) => [`${value}%`, "Pass Rate"]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="passRate"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#passRateGrad)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Duration Trend */}
-      <div className="bg-[#111827] border border-[#1e293b] rounded-xl p-6 shadow-sm">
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-slate-200">Suite Duration (Seconds)</h3>
-          <p className="text-xs text-slate-400">Execution time trend per suite run</p>
-        </div>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="date" stroke="#64748b" fontSize={11} tickLine={false} />
-              <YAxis stroke="#64748b" fontSize={11} tickLine={false} unit="s" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#0d1322",
-                  borderColor: "#1e293b",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  color: "#f8fafc",
-                }}
-                formatter={(value: any) => [`${value}s`, "Duration"]}
-              />
-              <Bar dataKey="durationSec" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      <Card className="shadow-xs">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold">
+            Suite Duration (Seconds)
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Execution duration timeline per suite run
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={11}
+                  tickLine={false}
+                />
+                <YAxis
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={11}
+                  tickLine={false}
+                  unit="s"
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    borderColor: "hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    color: "hsl(var(--popover-foreground))",
+                  }}
+                  formatter={(value: any) => [`${value}s`, "Duration"]}
+                />
+                <Bar
+                  dataKey="durationSec"
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

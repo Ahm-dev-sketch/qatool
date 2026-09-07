@@ -3,7 +3,17 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Cpu, Lock, User, AlertCircle, ArrowRight } from "lucide-react";
+import { Command, Lock, User, AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,72 +43,91 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#090d16] relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-background relative overflow-hidden">
       {/* Background glow effects */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md bg-[#111827] border border-[#1e293b] rounded-xl p-8 shadow-2xl relative z-10">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white mx-auto shadow-lg shadow-blue-500/25 mb-4">
-            <Cpu className="w-7 h-7" />
+      <Card className="w-full max-w-md shadow-xl border-border relative z-10">
+        <CardHeader className="text-center space-y-2 pb-6">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground mx-auto shadow-md shadow-primary/20">
+            <Command className="h-6 w-6" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-100">QATOOL Dashboard</h1>
-          <p className="text-xs text-slate-400 mt-1">Sign in to access test reports and automation metrics</p>
-        </div>
-
-        {error && (
-          <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Username</label>
-            <div className="relative">
-              <User className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                className="w-full bg-[#0d1322] border border-[#1e293b] rounded-lg pl-9 pr-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="admin"
-              />
+            <CardTitle className="text-xl font-bold tracking-tight">
+              QATOOL Platform
+            </CardTitle>
+            <CardDescription className="text-xs mt-1">
+              Sign in to manage test suites, view analytics, and inspect runs
+            </CardDescription>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {error && (
+            <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
             </div>
-          </div>
+          )}
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full bg-[#0d1322] border border-[#1e293b] rounded-lg pl-9 pr-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="••••••••"
-              />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">
+                Username
+              </label>
+              <div className="relative">
+                <User className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <Input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="pl-9 text-xs"
+                  placeholder="admin"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="p-3 bg-[#0d1322]/80 border border-[#1e293b] rounded-lg text-[11px] text-slate-400">
-            <span className="font-semibold text-slate-300">Default credentials:</span> admin / admin123
-          </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pl-9 text-xs"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 cursor-pointer"
-          >
-            <span>{loading ? "Signing in..." : "Sign In"}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </form>
-      </div>
+            <div className="rounded-lg border bg-muted/40 p-3 text-[11px] text-muted-foreground">
+              <div className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                Default Credentials
+              </div>
+              <div>Username: <code className="text-primary font-mono font-semibold">admin</code> • Password: <code className="text-primary font-mono font-semibold">admin123</code></div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full text-xs font-semibold gap-2 mt-2"
+            >
+              <span>{loading ? "Signing in..." : "Sign In to Dashboard"}</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </form>
+        </CardContent>
+
+        <CardFooter className="border-t border-border pt-4 text-center justify-center text-[11px] text-muted-foreground">
+          QATOOL Custom Automation Toolkit v2.0
+        </CardFooter>
+      </Card>
     </div>
   );
 }

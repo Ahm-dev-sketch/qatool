@@ -1,17 +1,29 @@
 import { db } from "@/lib/db";
 import { TrendCharts } from "@/components/TrendCharts";
 import { formatDate, formatDuration } from "@/lib/utils";
-import { 
-  Activity, 
-  AlertTriangle, 
-  TrendingUp, 
-  Clock, 
-  Layers, 
-  Flame, 
+import {
+  Activity,
+  AlertTriangle,
+  Flame,
   Award,
-  CheckCircle2,
-  XCircle
+  TrendingUp,
 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +50,7 @@ export default async function TrendsPage() {
     };
   });
 
-  // Calculate Flaky Leaderboard (grouped by test case name / externalId)
+  // Calculate Flaky Leaderboard (grouped by test case externalId)
   const allCases = await db.testCase.findMany({
     select: {
       externalId: true,
@@ -88,98 +100,119 @@ export default async function TrendsPage() {
     .sort((a, b) => b.flakyCount - a.flakyCount);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
-      {/* Header */}
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Top Heading */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-2.5">
-          <Activity className="w-6 h-6 text-blue-500" />
-          Trends & Analytics
+        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+          <Activity className="h-6 w-6 text-primary" />
+          Trends & Stability Analytics
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Pass rates, duration timelines, and flaky test leaderboard
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Execution trends, duration timelines, and flaky test leaderboard
         </p>
       </div>
 
-      {/* Visual Charts */}
+      {/* Recharts Area & Bar Charts */}
       <TrendCharts data={chartData} />
 
       {/* Flaky Test Leaderboard */}
-      <div className="bg-[#111827] border border-[#1e293b] rounded-xl overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-[#1e293b] flex items-center justify-between">
+      <Card className="shadow-xs overflow-hidden">
+        <CardHeader className="px-6 py-4 border-b border-border bg-muted/20 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <Flame className="w-4 h-4 text-amber-500" />
-            <h2 className="text-sm font-semibold text-slate-200">Flaky Test Leaderboard</h2>
+            <Flame className="h-4 w-4 text-amber-500" />
+            <div>
+              <CardTitle className="text-sm font-semibold">
+                Flaky Test Leaderboard
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Tests that intermittent pass/fail on auto-retry
+              </CardDescription>
+            </div>
           </div>
-          <span className="text-xs text-slate-400">
-            {flakyLeaderboard.length} unstable test(s) detected
-          </span>
-        </div>
+          <Badge variant="warning" className="text-xs">
+            {flakyLeaderboard.length} Unstable Tests
+          </Badge>
+        </CardHeader>
 
-        {flakyLeaderboard.length === 0 ? (
-          <div className="p-10 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-            <Award className="w-8 h-8 text-emerald-500/60" />
-            <span>No flaky tests detected! All tests consistently pass or fail cleanly on the first attempt.</span>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[#1e293b] bg-[#0d1322]/70 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-6">Rank</th>
-                  <th className="py-3 px-6">Test Case</th>
-                  <th className="py-3 px-6">Type</th>
-                  <th className="py-3 px-6">Flaky Occurrences</th>
-                  <th className="py-3 px-6">Flaky Rate</th>
-                  <th className="py-3 px-6">Avg Duration</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1e293b] text-xs">
+        <CardContent className="p-0">
+          {flakyLeaderboard.length === 0 ? (
+            <div className="p-10 text-center text-xs text-muted-foreground flex flex-col items-center gap-2">
+              <Award className="h-8 w-8 text-emerald-500/60" />
+              <span>
+                Zero flaky tests detected! All tests consistently pass or fail cleanly on their initial attempt.
+              </span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <TableHead className="w-16 pl-6">Rank</TableHead>
+                  <TableHead>Test Case</TableHead>
+                  <TableHead className="w-24">Type</TableHead>
+                  <TableHead>Flaky Count</TableHead>
+                  <TableHead>Flaky Rate</TableHead>
+                  <TableHead className="pr-6 text-right">Avg Duration</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="text-xs">
                 {flakyLeaderboard.map((item, idx) => {
-                  const flakyPct = Math.round((item.flakyCount / item.runs) * 100);
-                  const avgDuration = Math.round(item.totalDuration / item.runs);
+                  const flakyPct = Math.round(
+                    (item.flakyCount / item.runs) * 100
+                  );
+                  const avgDuration = Math.round(
+                    item.totalDuration / item.runs
+                  );
 
                   return (
-                    <tr key={item.externalId} className="hover:bg-[#151e32]/40 transition-colors">
-                      <td className="py-4 px-6 font-bold text-amber-400">
+                    <TableRow key={item.externalId} className="hover:bg-muted/40">
+                      <TableCell className="pl-6 font-bold text-amber-500">
                         #{idx + 1}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="font-semibold text-slate-200">{item.name}</div>
-                        <code className="text-[10px] font-mono text-slate-400">{item.externalId}</code>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-semibold text-foreground">
+                          {item.name}
+                        </div>
+                        <code className="font-mono text-[10px] text-muted-foreground">
+                          {item.externalId}
+                        </code>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="font-mono text-[10px] uppercase">
                           {item.type}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                          <AlertTriangle className="w-3.5 h-3.5" />
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="warning" className="gap-1 font-semibold">
+                          <AlertTriangle className="h-3 w-3" />
                           {item.flakyCount} times
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="w-16 h-2 rounded-full bg-slate-800 overflow-hidden">
+                          <div className="h-2 w-20 rounded-full bg-muted overflow-hidden">
                             <div
                               className="h-full bg-amber-500 rounded-full"
-                              style={{ width: `${Math.min(100, flakyPct)}%` }}
+                              style={{
+                                width: `${Math.min(100, flakyPct)}%`,
+                              }}
                             />
                           </div>
-                          <span className="text-slate-300 font-medium">{flakyPct}%</span>
+                          <span className="font-medium text-foreground">
+                            {flakyPct}%
+                          </span>
                         </div>
-                      </td>
-                      <td className="py-4 px-6 text-slate-400 font-mono">
+                      </TableCell>
+                      <TableCell className="pr-6 text-right font-mono text-muted-foreground">
                         {formatDuration(avgDuration)}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

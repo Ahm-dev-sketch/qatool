@@ -1,21 +1,29 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { formatDate, formatDuration } from "@/lib/utils";
-import { 
-  Layers, 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  Clock, 
-  History, 
+import {
+  Layers,
+  Clock,
   ArrowRight,
-  Filter
+  Filter,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  FolderOpen,
 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
 export default async function ExplorerPage() {
-  // Fetch all test cases with their parent run details
   const cases = await db.testCase.findMany({
     orderBy: { run: { createdAt: "desc" } },
     include: {
@@ -29,7 +37,6 @@ export default async function ExplorerPage() {
     },
   });
 
-  // Group test cases by externalId
   const caseMap = new Map<
     string,
     {
@@ -78,8 +85,7 @@ export default async function ExplorerPage() {
     if (c.flaky) existing.flakyCount += 1;
     existing.totalDurationMs += c.durationMs;
 
-    // Maintain history (sorted newest to oldest)
-    if (existing.history.length < 10) {
+    if (existing.history.length < 12) {
       existing.history.push({
         runId: c.run.id,
         date: c.run.createdAt,
@@ -95,141 +101,156 @@ export default async function ExplorerPage() {
   const uniqueCases = Array.from(caseMap.values());
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Top Heading */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-2.5">
-            <Layers className="w-6 h-6 text-blue-500" />
-            Test Case Explorer
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <Layers className="h-6 w-6 text-primary" />
+            Test Case Management & Explorer
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Catalog of all defined test cases, historical pass rates, and stability index
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Lightweight TestRail / Xray catalog: organization by tags, stability indices, and execution history
           </p>
         </div>
-        <div className="text-xs text-slate-400 bg-[#111827] border border-[#1e293b] px-3 py-1.5 rounded-lg">
-          <strong className="text-slate-200">{uniqueCases.length}</strong> unique test cases registered
-        </div>
+
+        <Badge variant="outline" className="text-xs px-3 py-1 font-mono">
+          {uniqueCases.length} Test Cases Registered
+        </Badge>
       </div>
 
-      {/* Case List */}
+      {/* Test Case Cards */}
       <div className="space-y-4">
         {uniqueCases.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs bg-[#111827] border border-[#1e293b] rounded-xl">
-            No test cases found. Run tests via CLI first to populate the catalog.
-          </div>
+          <Card className="shadow-xs">
+            <CardContent className="p-12 text-center text-xs text-muted-foreground">
+              No test cases found. Execute test suites to populate the catalog.
+            </CardContent>
+          </Card>
         ) : (
           uniqueCases.map((tc) => {
-            const passRate = Math.round((tc.passedCount / tc.totalExecutions) * 100);
-            const avgDuration = Math.round(tc.totalDurationMs / tc.totalExecutions);
+            const passRate = Math.round(
+              (tc.passedCount / tc.totalExecutions) * 100
+            );
+            const avgDuration = Math.round(
+              tc.totalDurationMs / tc.totalExecutions
+            );
 
             return (
-              <div
+              <Card
                 key={tc.externalId}
-                className="bg-[#111827] border border-[#1e293b] rounded-xl p-6 shadow-sm hover:border-slate-700 transition-colors"
+                className="shadow-xs hover:border-primary/40 transition-colors"
               >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                  {/* Left Column: Title and tags */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-sm font-bold text-slate-200">{tc.name}</h3>
-                      <code className="text-xs font-mono text-blue-400 bg-blue-950/40 border border-blue-800/40 px-2 py-0.5 rounded">
-                        {tc.externalId}
-                      </code>
-                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                        {tc.type}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400">
-                      <span>Tags:</span>
-                      {tc.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-[10px] text-slate-300 bg-[#1e293b] px-2 py-0.5 rounded-md"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Middle Column: Reliability Metrics */}
-                  <div className="flex items-center gap-8 text-xs shrink-0">
-                    <div>
-                      <span className="text-[11px] text-slate-400 block uppercase font-semibold">
-                        Success Rate
-                      </span>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="w-16 h-2 rounded-full bg-slate-800 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${passRate >= 80 ? "bg-emerald-400" : "bg-red-400"}`}
-                            style={{ width: `${passRate}%` }}
-                          />
-                        </div>
-                        <span className="font-bold text-slate-200">{passRate}%</span>
+                <CardContent className="p-6">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    {/* Left: Metadata */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <h3 className="text-sm font-bold text-foreground">
+                          {tc.name}
+                        </h3>
+                        <code className="rounded border bg-muted/60 px-2 py-0.5 font-mono text-xs text-primary font-semibold">
+                          {tc.externalId}
+                        </code>
+                        <Badge variant="secondary" className="font-mono text-[10px] uppercase">
+                          {tc.type}
+                        </Badge>
                       </div>
-                    </div>
 
-                    <div>
-                      <span className="text-[11px] text-slate-400 block uppercase font-semibold">
-                        Avg Latency
-                      </span>
-                      <div className="text-slate-200 font-mono mt-1 flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        {formatDuration(avgDuration)}
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-[11px] text-slate-400 block uppercase font-semibold">
-                        Flaky Rate
-                      </span>
-                      <div className="text-slate-200 font-medium mt-1">
-                        {tc.flakyCount > 0 ? (
-                          <span className="text-amber-400 font-semibold">{tc.flakyCount} / {tc.totalExecutions}</span>
-                        ) : (
-                          <span className="text-emerald-400">0%</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Execution History Dots */}
-                  <div className="shrink-0 space-y-1.5">
-                    <span className="text-[11px] text-slate-400 block uppercase font-semibold">
-                      Recent Runs ({tc.history.length})
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {tc.history.map((h, idx) => {
-                        const isPass = h.status === "pass";
-                        return (
-                          <Link
-                            key={idx}
-                            href={`/runs/${h.runId}`}
-                            title={`Run ${h.runId.slice(0, 8)} on ${formatDate(h.date)}: ${h.status.toUpperCase()}${h.flaky ? " (FLAKY)" : ""}`}
-                            className={`w-4 h-4 rounded flex items-center justify-center transition-transform hover:scale-125 ${
-                              h.flaky
-                                ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                                : isPass
-                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                                : "bg-red-500/20 text-red-400 border border-red-500/40"
-                            }`}
+                      <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground">
+                        <span className="text-[11px] font-medium">Tags:</span>
+                        {tc.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
                           >
-                            {h.flaky ? (
-                              <span className="text-[9px] font-bold">!</span>
-                            ) : isPass ? (
-                              <span className="text-[9px]">✓</span>
-                            ) : (
-                              <span className="text-[9px]">✗</span>
-                            )}
-                          </Link>
-                        );
-                      })}
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Middle: Stats */}
+                    <div className="flex items-center gap-8 text-xs shrink-0">
+                      <div>
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                          Pass Rate
+                        </span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="h-2 w-16 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                passRate >= 80
+                                  ? "bg-emerald-500"
+                                  : "bg-destructive"
+                              }`}
+                              style={{ width: `${passRate}%` }}
+                            />
+                          </div>
+                          <span className="font-bold text-foreground">
+                            {passRate}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                          Avg Latency
+                        </span>
+                        <div className="font-mono text-foreground mt-1 flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          {formatDuration(avgDuration)}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                          Flaky Rate
+                        </span>
+                        <div className="mt-1 font-semibold">
+                          {tc.flakyCount > 0 ? (
+                            <span className="text-amber-500">
+                              {tc.flakyCount} / {tc.totalExecutions}
+                            </span>
+                          ) : (
+                            <span className="text-emerald-500">0%</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: History run indicators */}
+                    <div className="space-y-1.5 shrink-0">
+                      <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                        Recent Executions ({tc.history.length})
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {tc.history.map((h, idx) => {
+                          const isPass = h.status === "pass";
+                          return (
+                            <Link
+                              key={idx}
+                              href={`/runs/${h.runId}`}
+                              title={`Run on ${formatDate(h.date)}: ${h.status.toUpperCase()}${
+                                h.flaky ? " (FLAKY)" : ""
+                              }`}
+                              className={`flex h-4 w-4 items-center justify-center rounded text-[9px] font-bold transition-transform hover:scale-125 ${
+                                h.flaky
+                                  ? "border border-amber-500/40 bg-amber-500/15 text-amber-500"
+                                  : isPass
+                                  ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-500"
+                                  : "border border-destructive/40 bg-destructive/15 text-destructive"
+                              }`}
+                            >
+                              {h.flaky ? "!" : isPass ? "✓" : "✗"}
+                            </Link>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             );
           })
         )}
